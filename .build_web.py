@@ -4,6 +4,7 @@ import sys
 import os
 import platform
 import subprocess
+from pathlib import Path
 
 Import("env")
 
@@ -26,6 +27,7 @@ def build_web():
             else:
                 print(check_output(["npm", "install"]))
                 print(check_output(["node_modules/.bin/gulp"]))
+            Path("../dist/").mkdir(parents=True, exist_ok=True)
             copyfile("build/index.html.gz.h", "../dist/index.html.gz.h")
         except OSError as e:
             print("Encountered error OSError building webpage:", e)
