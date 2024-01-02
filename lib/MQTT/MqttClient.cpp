@@ -56,7 +56,8 @@ void MqttClient::begin() {
 
 bool MqttClient::connect() {
   char nameBuffer[30];
-  sprintf_P(nameBuffer, PSTR("milight-hub-%u"), ESP.getChipId());
+  sprintf_P(nameBuffer, PSTR("milight-hub-%u"), getESPId());
+
 
 #ifdef MQTT_DEBUG
     Serial.println(F("MqttClient - connecting using name"));
@@ -134,7 +135,7 @@ void MqttClient::handleClient() {
 }
 
 void MqttClient::sendUpdate(const MiLightRemoteConfig& remoteConfig, uint16_t deviceId, uint16_t groupId, const char* update) {
-  publish(settings.mqttUpdateTopicPattern, remoteConfig, deviceId, groupId, update);
+  publish(settings.mqttUpdateTopicPattern, remoteConfig, deviceId, groupId, update, false);
 }
 
 void MqttClient::sendState(const MiLightRemoteConfig& remoteConfig, uint16_t deviceId, uint16_t groupId, const char* update) {
@@ -190,7 +191,7 @@ void MqttClient::publish(
   uint16_t deviceId,
   uint16_t groupId,
   const char* message,
-  const bool retain
+  const bool _retain
 ) {
   if (_topic.length() == 0) {
     return;
@@ -198,6 +199,7 @@ void MqttClient::publish(
 
   BulbId bulbId(deviceId, groupId, remoteConfig.type);
   String topic = bindTopicString(_topic, bulbId);
+  const bool retain = _retain && this->settings.mqttRetain;
 
 #ifdef MQTT_DEBUG
   printf("MqttClient - publishing update to %s\n", topic.c_str());

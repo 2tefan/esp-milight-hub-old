@@ -5,6 +5,10 @@
 #include <algorithm>
 #include <JsonHelpers.h>
 
+#ifdef ESP32
+  #include <SPIFFS.h>
+#endif
+
 #define PORT_POSITION(s) ( s.indexOf(':') )
 
 GatewayConfig::GatewayConfig(uint16_t deviceId, uint16_t port, uint8_t protocolVersion)
@@ -89,6 +93,7 @@ void Settings::patch(JsonObject parsedSettings) {
   this->setIfPresent(parsedSettings, "state_flush_interval", stateFlushInterval);
   this->setIfPresent(parsedSettings, "mqtt_state_rate_limit", mqttStateRateLimit);
   this->setIfPresent(parsedSettings, "mqtt_debounce_delay", mqttDebounceDelay);
+  this->setIfPresent(parsedSettings, "mqtt_retain", mqttRetain);
   this->setIfPresent(parsedSettings, "packet_repeat_throttle_threshold", packetRepeatThrottleThreshold);
   this->setIfPresent(parsedSettings, "packet_repeat_throttle_sensitivity", packetRepeatThrottleSensitivity);
   this->setIfPresent(parsedSettings, "packet_repeat_minimum", packetRepeatMinimum);
@@ -207,10 +212,11 @@ void Settings::dumpGroupIdAliases(JsonObject json) {
 }
 
 void Settings::load(Settings& settings) {
+
   if (SPIFFS.exists(SETTINGS_FILE)) {
     // Clear in-memory settings
     settings = Settings();
-
+    
     File f = SPIFFS.open(SETTINGS_FILE, "r");
 
     DynamicJsonDocument json(MILIGHT_HUB_SETTINGS_BUFFER_SIZE);
@@ -219,7 +225,7 @@ void Settings::load(Settings& settings) {
 
     if (! error) {
       JsonObject parsedSettings = json.as<JsonObject>();
-      settings.patch(parsedSettings);
+      settings.patch(parsedSettings);      
     } else {
       Serial.print(F("Error parsing saved settings file: "));
       Serial.println(error.c_str());
@@ -273,6 +279,7 @@ void Settings::serialize(Print& stream, const bool prettyPrint) {
   root["state_flush_interval"] = this->stateFlushInterval;
   root["mqtt_state_rate_limit"] = this->mqttStateRateLimit;
   root["mqtt_debounce_delay"] = this->mqttDebounceDelay;
+  root["mqtt_retain"] = this->mqttRetain;
   root["packet_repeat_throttle_sensitivity"] = this->packetRepeatThrottleSensitivity;
   root["packet_repeat_throttle_threshold"] = this->packetRepeatThrottleThreshold;
   root["packet_repeat_minimum"] = this->packetRepeatMinimum;

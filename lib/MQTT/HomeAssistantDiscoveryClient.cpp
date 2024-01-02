@@ -35,18 +35,23 @@ void HomeAssistantDiscoveryClient::removeConfig(const BulbId& bulbId) {
 void HomeAssistantDiscoveryClient::addConfig(const char* alias, const BulbId& bulbId) {
   String topic = buildTopic(bulbId);
   DynamicJsonDocument config(1024);
+  
+  char uniqidBuffer[30];
+  sprintf_P(uniqidBuffer, PSTR("%X-%s"), getESPId(), alias);
 
   config[F("schema")] = F("json");
   config[F("name")] = alias;
   config[F("command_topic")] = mqttClient->bindTopicString(settings.mqttTopicPattern, bulbId);
   config[F("state_topic")] = mqttClient->bindTopicString(settings.mqttStateTopicPattern, bulbId);
+  config[F("uniq_id")] = mqttClient->bindTopicString(uniqidBuffer, bulbId);
   JsonObject deviceMetadata = config.createNestedObject(F("device"));
 
   deviceMetadata[F("manufacturer")] = F("esp8266_milight_hub");
   deviceMetadata[F("sw_version")] = QUOTE(MILIGHT_HUB_VERSION);
 
   JsonArray identifiers = deviceMetadata.createNestedArray(F("identifiers"));
-  identifiers.add(ESP.getChipId());
+  identifiers.add(getESPId());
+
   bulbId.serialize(identifiers);
 
   // HomeAssistant only supports simple client availability
@@ -138,7 +143,7 @@ String HomeAssistantDiscoveryClient::buildTopic(const BulbId& bulbId) {
 
   topic += "light/";
   // Use a static ID that doesn't depend on configuration.
-  topic += "milight_hub_" + String(ESP.getChipId());
+  topic += "milight_hub_" + String(getESPId());
 
   // make the object ID based on the actual parameters rather than the alias.
   topic += "/";
